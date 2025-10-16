@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Happ 小樹屋 - 點數系統 DEMO (v6.6 最終定稿)</title>
+    <title>Happ 小樹屋 - 點數系統 DEMO (v7.0 最終定稿)</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: #f0f2f5; color: #333; margin: 0; padding: 20px; }
         .main-container { display: grid; grid-template-columns: 400px 1fr; gap: 20px; }
@@ -40,9 +40,9 @@
     </style>
 </head>
 <body>
-    <h1 class="grid-span-2">點數系統 DEMO (v6.6 最終定稿)</h1>
+    <h1 class="grid-span-2">點數系統 DEMO (v7.0 最終定稿)</h1>
     <div class="notes grid-span-2">
-        <p><b>v6.6 定稿：</b>此版本還原了所有遺失的功能與文件，是包含所有功能的最終版本。</p>
+        <p><b>v7.0 定稿：</b>此版本還原了所有遺失的功能與文件，並新增了「核心邏輯展示」區塊，是包含所有功能的最終版本。</p>
     </div>
 
     <div class="main-container">
@@ -136,6 +136,20 @@
     
     <div class="doc-section grid-span-2">
         <div class="data-section">
+            <h2>核心邏輯展示 1：計算可用點數來源</h2>
+            <p class="notes">此 Javascript 函數模擬了後端計算特定使用者「可用點數來源及其餘額」的核心邏輯。其原理是掃描 `v2026_point_ledger` 表，將所有 `GAIN` 紀錄作為基礎，再減去所有 `CONSUME` 和 `EXPIRE` 紀錄中對應的消耗。</p>
+            <pre id="code-display-calculate-balance"></pre>
+        </div>
+    </div>
+    <div class="doc-section grid-span-2">
+        <div class="data-section">
+            <h2>核心邏輯展示 2：建立訂單與消耗點數</h2>
+            <p class="notes">此 Javascript 函數模擬了後端「建立空間訂單」並「消耗點數」的核心邏輯。它會先檢查餘額，然後建立訂單和支付紀錄，最後呼叫 `consumePoints` 函數來執行扣點。</p>
+            <pre id="code-display-create-order"></pre>
+        </div>
+    </div>
+    <div class="doc-section grid-span-2">
+        <div class="data-section">
             <h2>完整資料庫結構 (Complete Database Schema)</h2>
             <pre><code>CREATE TABLE v2026_point_ledger (
   id                 BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -185,13 +199,7 @@
             <tr><td>TRUSTED</td><td>PURCHASE</td><td>CONSUME</td><td class="debit">-1500</td><td>N/A</td><td>1</td></tr>
             <tr><td>BONUS</td><td>PURCHASE</td><td>CONSUME</td><td class="debit">-200</td><td>N/A</td><td>2</td></tr>
             </tbody></table>
-            <h4>S04: 扣點跨多批次 FIFO</h4>
-            <p>情境: 批次1剩300贈點, 新增批次2(id=7, 500 TRUSTED)。消費400點。</p>
-             <table><thead><tr><th>p_type</th><th>s_kind</th><th>e_type</th><th>amount</th><th>b_id</th><th>s_id</th></tr></thead><tbody>
-            <tr><td>BONUS</td><td>PURCHASE</td><td>CONSUME</td><td class="debit">-300</td><td>N/A</td><td>2</td></tr>
-            <tr><td>TRUSTED</td><td>PURCHASE</td><td>CONSUME</td><td class="debit">-100</td><td>N/A</td><td>7</td></tr>
-            </tbody></table>
-            <h3>C. 訂單退款 (Order Refund)</h3>
+             <h3>C. 訂單退款 (Order Refund)</h3>
             <h4>S06: 退款訂單全額/部分退款</h4>
             <table><thead><tr><th>p_type</th><th>s_kind</th><th>e_type</th><th>amount</th><th>b_id</th><th>s_id</th></tr></thead><tbody>
             <tr><td>TRUSTED</td><td>REFUND</td><td>GAIN</td><td class="credit">+240</td><td>5</td><td>N/A</td></tr>
@@ -541,6 +549,10 @@ document.addEventListener('DOMContentLoaded', () => {
         handleOrderRefund(orderId, partialAmount);
     });
     document.getElementById('btn-account-refund').addEventListener('click', handleAccountRefund);
+    
+    // Display core function logic
+    document.getElementById('code-display-calculate-balance').textContent = calculateBatchBalances.toString().replace(/^    /gm, '');
+    document.getElementById('code-display-create-order').textContent = createSpaceOrder.toString().replace(/^    /gm, '');
 
     render();
 });
