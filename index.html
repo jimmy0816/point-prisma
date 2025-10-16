@@ -3,402 +3,547 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Happ 小樹屋 - 點數系統邏輯 DEMO (v2.3 最終版)</title>
+    <title>Happ 小樹屋 - 點數系統 DEMO (v6.6 最終定稿)</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: #f8f9fa; color: #212529; margin: 0; padding: 20px; display: flex; flex-direction: column; gap: 20px; }
-        .container { display: grid; grid-template-columns: 1fr 2fr; gap: 20px; }
-        .controls, .wallet, .data-section { background-color: #fff; border-radius: 8px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: #f0f2f5; color: #333; margin: 0; padding: 20px; }
+        .main-container { display: grid; grid-template-columns: 400px 1fr; gap: 20px; }
+        .controls, .wallet, .data-section { background-color: #fff; border-radius: 8px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 20px; }
         h1, h2, h3 { color: #007bff; margin-top: 0; border-bottom: 2px solid #dee2e6; padding-bottom: 10px; }
         h3 { font-size: 1.2em; color: #343a40; border-bottom: none; }
         .control-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: 500; }
+        label { display: block; margin-bottom: 5px; font-weight: 500; font-size: 0.9em; color: #555;}
         button, input { width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ced4da; box-sizing: border-box; font-size: 1em; }
         button { background-color: #007bff; color: white; border: none; cursor: pointer; transition: background-color 0.2s; }
-        button:hover { background-color: #0056b3; }
-        button:disabled { background-color: #6c757d; cursor: not-allowed; }
+        button:hover:not(:disabled) { background-color: #0056b3; }
+        button:disabled { background-color: #aecbfa; cursor: not-allowed; }
         button.secondary { background-color: #6c757d; }
-        button.secondary:hover:not(:disabled) { background-color: #5a6268; }
         button.danger { background-color: #dc3545; }
-        button.danger:hover:not(:disabled) { background-color: #c82333; }
         button.info { background-color: #17a2b8; }
-        button.info:hover { background-color: #138496; }
-        .wallet-display { display: flex; justify-content: space-around; text-align: center; }
+        button.success { background-color: #28a745; }
+        .wallet-display { display: grid; grid-template-columns: 1fr 1fr; text-align: center; gap: 10px; }
         .wallet-item span { display: block; font-size: 2em; font-weight: bold; color: #28a745; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { border: 1px solid #dee2e6; padding: 12px; text-align: left; vertical-align: top; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.85em; }
+        th, td { border: 1px solid #dee2e6; padding: 8px; text-align: left; vertical-align: top; white-space: nowrap; }
         th { background-color: #e9ecef; font-weight: 600; }
         .new-row { animation: highlight 2s ease-out; }
-        @keyframes highlight { from { background-color: #fff3cd; } to { background-color: transparent; } }
-        .log-container { grid-column: 1 / -1; }
+        @keyframes highlight { from { background-color: #fff3cd; } to { background-color: #fff; } }
         .notes { background-color: #e9ecef; padding: 15px; border-radius: 5px; font-size: 0.9em; line-height: 1.5; }
-        .credit-cancel { color: #1e7e34; font-style: italic; font-weight: bold; }
-        .marketing-grant { color: #17a2b8; font-weight: bold; }
-
-        /* Philosophy Section Styles */
-        .philosophy-section { margin-top: 30px; }
-        .philosophy-content { line-height: 1.6; color: #333; }
-        .philosophy-content h3 { color: #007bff; margin-top: 25px; margin-bottom: 15px; font-size: 1.3em; border-bottom: 2px solid #e9ecef; padding-bottom: 8px; }
-        .philosophy-content h4 { color: #495057; margin-top: 20px; margin-bottom: 10px; font-size: 1.1em; }
-        .philosophy-content p { margin-bottom: 15px; text-align: justify; }
-        .philosophy-content ul, .philosophy-content ol { margin-bottom: 15px; padding-left: 25px; }
-        .philosophy-content li { margin-bottom: 8px; }
-        .analogy-box, .practice-box, .closing-box { background-color: #f8f9fa; border-left: 4px solid #007bff; padding: 20px; margin: 20px 0; border-radius: 0 8px 8px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .analogy-box h4, .practice-box h4, .closing-box h4 { color: #007bff; margin-top: 0; font-weight: 600; }
-        .philosophy-content strong { color: #dc3545; font-weight: 600; }
+        .credit { color: green; font-weight: bold; }
+        .debit { color: red; }
+        .table-wrapper { max-height: 300px; overflow-y: auto; width: 100%;}
+        .grid-span-2 { grid-column: span 2; }
+        pre { background: #212529; color: #f8f9fa; padding: 15px; border-radius: 4px; white-space: pre-wrap; word-wrap: break-word; font-size: 0.9em; line-height: 1.6; }
+        .doc-section { margin-top: 20px;}
+        .doc-section h3 { font-size: 1.4em; color: #007bff; border-bottom: 2px solid #e9ecef; padding-bottom: 10px; margin-top: 30px;}
+        .doc-section p { font-size: 1em; line-height: 1.7; }
+        .doc-section h4 { font-size: 1.2em; color: #343a40; margin-top: 20px; }
     </style>
 </head>
 <body>
-
-    <h1>Happ 小樹屋 - 點數系統邏輯互動 DEMO (v2.3 最終版)</h1>
-    <div class="notes">
-        <p><b>v2.3 Bugfix：</b>修正了在擁有多個贈點來源時，消費扣款優先級計算錯誤的嚴重 Bug。現在系統會嚴格遵循「所有贈點 > 所有信託點數」的原則進行消耗。</p>
+    <h1 class="grid-span-2">點數系統 DEMO (v6.6 最終定稿)</h1>
+    <div class="notes grid-span-2">
+        <p><b>v6.6 定稿：</b>此版本還原了所有遺失的功能與文件，是包含所有功能的最終版本。</p>
     </div>
 
-    <div class="container">
-        <div class="left-panel">
+    <div class="main-container">
+        <div class="left-column">
             <div class="controls">
                 <h2>控制面板</h2>
+                 <div class="control-group">
+                    <label>1. 儲值點數 (沿用 `points_programs`)</label>
+                    <div id="purchase-buttons-container"></div>
+                </div>
                 <div class="control-group">
-                    <label>1. 儲值點數方案</label>
-                    <button id="btn-purchase-a">儲值 A ($1500 送 500贈點)</button>
-                    <button id="btn-purchase-b" style="margin-top:5px;">儲值 B ($500 送 100贈點)</button>
+                    <label>2. 行銷活動</label>
+                    <button id="btn-grant-referral" class="info">好友推薦 (贈 100 點)</button>
                 </div>
                 <hr>
                 <div class="control-group">
-                    <label>2. 模擬消費</label>
-                    <input type="number" id="spend-amount" placeholder="輸入要消費的點數" value="1000">
-                    <button id="btn-spend" class="secondary" style="margin-top:5px;">執行消費</button>
+                    <label>3. 建立空間訂單並支付</label>
+                    <input type="number" id="order-amount" value="2000" title="訂單總金額">
+                    <input type="number" id="points-to-use" value="1600" title="希望使用的點數" style="margin-top:5px;">
+                    <button id="btn-create-order" style="margin-top:5px;">建立訂單</button>
                 </div>
                  <hr>
                 <div class="control-group">
-                    <label>3. 行銷活動</label>
-                    <button id="btn-grant-referral" class="info">好友推薦 (贈 100 點)</button>
-                    <button id="btn-grant-event" class="info" style="margin-top:5px;">節日活動 (贈 88 點)</button>
+                    <label>4. 訂單層級退款</label>
+                    <input type="text" id="refund-order-id" placeholder="輸入訂單 ID (例: 1)">
+                    <input type="number" id="partial-refund-amount" placeholder="部分退款金額 (可選)" style="margin-top:5px;">
+                    <button id="btn-order-refund" class="success" style="margin-top:5px;">執行訂單退款</button>
                 </div>
                 <hr>
                 <div class="control-group">
-                    <label>4. 申請退款</label>
-                    <button id="btn-account-refund" class="danger">查詢並退款所有可退金額</button>
+                    <label>5. 帳戶點數結清</label>
+                    <button id="btn-account-refund" class="danger">查詢並結清所有可退點數</button>
                 </div>
             </div>
             <div class="wallet">
-                <h2>使用者錢包 (User Wallet)</h2>
+                <h2>使用者帳戶總覽 (新系統)</h2>
                 <div class="wallet-display">
-                    <div class="wallet-item"><h3>信託點數</h3><span id="wallet-trusted">0.00</span></div>
-                    <div class="wallet-item"><h3>贈與點數</h3><span id="wallet-bonus">0.00</span></div>
+                    <div class="wallet-item"><h3>信託點餘額</h3><span id="wallet-trusted">0</span></div>
+                    <div class="wallet-item"><h3>贈點餘額</h3><span id="wallet-bonus">0</span></div>
                 </div>
             </div>
              <div class="data-section">
-                <h2>消費歷史 (Spend History)</h2>
-                <table id="table-spends">
-                    <thead><tr><th>消費ID</th><th>消費總額</th><th>狀態</th><th>操作</th></tr></thead>
-                    <tbody></tbody>
-                </table>
+                <h2>可用點數來源 (新系統)</h2>
+                <div class="table-wrapper" style="max-height:200px">
+                     <table id="table-batches">
+                        <thead><tr><th>來源 ID</th><th>批次 ID</th><th>類型</th><th>剩餘點數</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
             </div>
         </div>
-
-        <div class="right-panel">
+        <div class="right-column">
+             <div class="data-section">
+                <h2>點數儲值訂單 (`points_orders`)</h2>
+                <div class="table-wrapper">
+                    <table id="table-points-orders">
+                        <thead><tr><th>id</th><th>user_id</th><th>program_id</th><th>no</th><th>amount</th><th>status</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+             <div class="data-section">
+                <h2>空間訂單 (`v2025_orders`)</h2>
+                <div class="table-wrapper">
+                    <table id="table-v2025-orders">
+                        <thead><tr><th>訂單ID</th><th>總金額</th><th>狀態</th><th>已退金額</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
             <div class="data-section">
-                <h2>儲值歷史 (Point Purchases)</h2>
-                <table id="table-purchases">
-                    <thead><tr><th>訂單ID</th><th>支付金額</th><th>獲得信託點</th><th>獲得贈點</th><th>狀態</th></tr></thead>
-                    <tbody></tbody>
-                </table>
+                <h2>訂單支付紀錄 (`v2025_order_payments`)</h2>
+                <div class="table-wrapper">
+                    <table id="table-v2025-payments">
+                        <thead><tr><th>支付ID</th><th>訂單ID</th><th>支付方式</th><th>金額</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
-    
-    <div class="log-container">
-         <div class="data-section">
-            <h2>點數帳本 (Point Ledger)</h2>
+    <div class="grid-span-2 data-section">
+        <h2>新點數總帳本 (`v2026_point_ledger`)</h2>
+        <div class="table-wrapper">
             <table id="table-ledger">
-                <thead><tr><th>帳本ID</th><th>關聯訂單/來源</th><th>交易組ID</th><th>點數類型</th><th>交易類型</th><th>異動</th><th>交易後餘額</th></tr></thead>
+                <thead><tr><th>id</th><th>point_order_id</th><th>v2025_order_id</th><th>point_type</th><th>source_kind</th><th>event_type</th><th>amount</th><th>batch_id</th><th>source_id</th><th>expire_at</th></tr></thead>
                 <tbody></tbody>
             </table>
+        </div>
+    </div>
+    
+    <div class="doc-section grid-span-2">
+        <div class="data-section">
+            <h2>完整資料庫結構 (Complete Database Schema)</h2>
+            <pre><code>CREATE TABLE v2026_point_ledger (
+  id                 BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  user_id            BIGINT UNSIGNED NOT NULL,
+  point_order_id     BIGINT UNSIGNED NULL COMMENT '關聯至 points_orders.id',
+  v2025_order_id     BIGINT UNSIGNED NULL COMMENT '關聯至 v2025_orders.id',
+
+  point_type         TINYINT NOT NULL COMMENT '1=TRUSTED(Paid), 2=BONUS',
+  source_kind        TINYINT NOT NULL COMMENT '1=PURCHASE, 2=MARKETING, 3=ADMIN, 4=REFUND', 
+  event_type         TINYINT NOT NULL COMMENT '1=GAIN(獲得), 2=CONSUME(消耗), 3=EXPIRE(過期)',
+  amount             BIGINT NOT NULL,
+
+  batch_id           BIGINT UNSIGNED NULL      COMMENT '使用者內遞增的批次ID；GAIN 才有值',
+  expire_at          DATETIME NULL             COMMENT '僅 BONUS 可能會有，GAIN 才有值',
+
+  source_id          BIGINT UNSIGNED NULL      COMMENT '指向本表某一條 GAIN.id；CONSUME/EXPIRE 才會有值',
+
+  created_at         DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  -- ... 其他後端技術欄位 ...
+
+  PRIMARY KEY (id),
+  KEY idx_user_batch   (user_id, batch_id),
+  KEY idx_source_ptr   (source_id)
+);
+</code></pre>
+        </div>
+    </div>
+
+    <div class="doc-section grid-span-2">
+        <div class="data-section">
+            <h2>全場景資料格式範例 (Data Format Examples for All Scenarios)</h2>
+            <p class="notes"><b>欄位簡寫:</b> p_type: point_type, s_kind: source_kind, e_type: event_type, b_id: batch_id, s_id: source_id</p>
+            <h3>A. 儲值 (Topup)</h3>
+            <h4>S01: 儲值購買 Paid 與附贈 Bonus</h4>
+            <table><thead><tr><th>p_type</th><th>s_kind</th><th>e_type</th><th>amount</th><th>b_id</th><th>s_id</th></tr></thead><tbody>
+            <tr><td>TRUSTED</td><td>PURCHASE</td><td>GAIN</td><td class="credit">+1500</td><td>1</td><td>N/A</td></tr>
+            <tr><td>BONUS</td><td>PURCHASE</td><td>GAIN</td><td class="credit">+500</td><td>1</td><td>N/A</td></tr>
+            </tbody></table>
+            <h4>S10: 儲值訂單退款轉贈點</h4>
+            <table><thead><tr><th>p_type</th><th>s_kind</th><th>e_type</th><th>amount</th><th>b_id</th><th>s_id</th></tr></thead><tbody>
+            <tr><td>BONUS</td><td>REFUND</td><td>GAIN</td><td class="credit">+240</td><td>2</td><td>N/A</td></tr>
+            </tbody></table>
+            <h3>B. 訂單扣點 (Booking Debit)</h3>
+            <h4>S03: 扣點 Paid 不足，扣同批 Bonus</h4>
+            <p>情境: 消費 1700 點，消耗 `id=1` 的 TRUSTED 和 `id=2` 的 BONUS。</p>
+            <table><thead><tr><th>p_type</th><th>s_kind</th><th>e_type</th><th>amount</th><th>b_id</th><th>s_id</th></tr></thead><tbody>
+            <tr><td>TRUSTED</td><td>PURCHASE</td><td>CONSUME</td><td class="debit">-1500</td><td>N/A</td><td>1</td></tr>
+            <tr><td>BONUS</td><td>PURCHASE</td><td>CONSUME</td><td class="debit">-200</td><td>N/A</td><td>2</td></tr>
+            </tbody></table>
+            <h4>S04: 扣點跨多批次 FIFO</h4>
+            <p>情境: 批次1剩300贈點, 新增批次2(id=7, 500 TRUSTED)。消費400點。</p>
+             <table><thead><tr><th>p_type</th><th>s_kind</th><th>e_type</th><th>amount</th><th>b_id</th><th>s_id</th></tr></thead><tbody>
+            <tr><td>BONUS</td><td>PURCHASE</td><td>CONSUME</td><td class="debit">-300</td><td>N/A</td><td>2</td></tr>
+            <tr><td>TRUSTED</td><td>PURCHASE</td><td>CONSUME</td><td class="debit">-100</td><td>N/A</td><td>7</td></tr>
+            </tbody></table>
+            <h3>C. 訂單退款 (Order Refund)</h3>
+            <h4>S06: 退款訂單全額/部分退款</h4>
+            <table><thead><tr><th>p_type</th><th>s_kind</th><th>e_type</th><th>amount</th><th>b_id</th><th>s_id</th></tr></thead><tbody>
+            <tr><td>TRUSTED</td><td>REFUND</td><td>GAIN</td><td class="credit">+240</td><td>5</td><td>N/A</td></tr>
+            </tbody></table>
+            <h3>D. 帳戶退款 (Account Refund)</h3>
+            <h4>S07: 帳戶退款一次性退款</h4>
+            <table><thead><tr><th>p_type</th><th>s_kind</th><th>e_type</th><th>amount</th><th>b_id</th><th>s_id</th></tr></thead><tbody>
+            <tr><td>TRUSTED</td><td>ADMIN</td><td>CONSUME</td><td class="debit">-100</td><td>N/A</td><td>13</td></tr>
+            <tr><td>BONUS</td><td>ADMIN</td><td>CONSUME</td><td class="debit">-200</td><td>N/A</td><td>2</td></tr>
+            </tbody></table>
+            <h3>E. 行銷活動贈點 (Marketing Bonus)</h3>
+            <h4>S08: 行銷贈點發放與扣回</h4>
+             <table><thead><tr><th>p_type</th><th>s_kind</th><th>e_type</th><th>amount</th><th>b_id</th><th>s_id</th></tr></thead><tbody>
+            <tr><td>BONUS</td><td>MARKETING</td><td>GAIN</td><td class="credit">+100</td><td>6</td><td>N/A</td></tr>
+            <tr><td>BONUS</td><td>ADMIN</td><td>CONSUME</td><td class="debit">-100</td><td>N/A</td><td>16</td></tr>
+            </tbody></table>
+            <h3>F. 到期 (Expire)</h3>
+            <h4>S09: 到期贈點到期失效</h4>
+            <table><thead><tr><th>p_type</th><th>s_kind</th><th>e_type</th><th>amount</th><th>b_id</th><th>s_id</th></tr></thead><tbody>
+            <tr><td>BONUS</td><td>ADMIN</td><td>EXPIRE</td><td class="debit">-100</td><td>N/A</td><td>16</td></tr>
+            </tbody></table>
+        </div>
+    </div>
+    
+    <div class="doc-section grid-span-2">
+        <div class="data-section">
+            <h2>核心功能 SQL 查詢語法範例</h2>
+            <p class="notes">以下 SQL 查詢展示了如何在真實資料庫環境中實現本 DEMO 的核心計算邏輯。所有查詢都應帶上 `WHERE user_id = ?` 條件。</p>
+            <h3>1. 查詢可用點數來源</h3>
+            <pre><code>
+SELECT
+    c.id AS source_id,
+    c.batch_id,
+    c.point_type,
+    (c.amount + IFNULL(SUM(d.amount), 0)) AS remaining_balance
+FROM
+    v2026_point_ledger c
+LEFT JOIN
+    v2026_point_ledger d ON c.id = d.source_id AND d.event_type IN (2, 3)
+WHERE
+    c.event_type = 1
+    AND c.user_id = ?
+GROUP BY
+    c.id
+HAVING
+    remaining_balance > 0
+ORDER BY
+    c.batch_id, c.point_type;
+            </code></pre>
+            <h3>2. 查詢帳戶總可退款金額</h3>
+            <pre><code>
+WITH SourceBalances AS (
+    SELECT
+        c.point_type,
+        c.source_kind,
+        (c.amount + IFNULL(SUM(d.amount), 0)) AS remaining_balance
+    FROM
+        v2026_point_ledger c
+    LEFT JOIN
+        v2026_point_ledger d ON c.id = d.source_id AND d.event_type IN (2, 3)
+    WHERE
+        c.event_type = 1 AND c.user_id = ?
+    GROUP BY c.id
+    HAVING remaining_balance > 0
+)
+SELECT
+    SUM(CASE WHEN point_type = 1 THEN remaining_balance ELSE 0 END) AS total_refundable_cash,
+    SUM(CASE WHEN point_type = 2 AND source_kind != 2 THEN remaining_balance ELSE 0 END) AS total_bonus_to_write_off,
+    SUM(CASE WHEN point_type = 2 AND source_kind = 2 THEN remaining_balance ELSE 0 END) AS total_bonus_to_keep
+FROM
+    SourceBalances;
+            </code></pre>
+            <h3>3. 查詢已到期且未使用的點數</h3>
+            <pre><code>
+WITH SourceBalances AS (
+    SELECT
+        c.id AS source_id,
+        (c.amount + IFNULL(SUM(d.amount), 0)) AS remaining_balance
+    FROM
+        v2026_point_ledger c
+    LEFT JOIN
+        v2026_point_ledger d ON c.id = d.source_id AND d.event_type IN (2, 3)
+    WHERE
+        c.event_type = 1 AND c.user_id = ?
+    GROUP BY c.id
+    HAVING remaining_balance > 0
+)
+SELECT
+    sb.source_id,
+    sb.remaining_balance
+FROM
+    SourceBalances sb
+JOIN
+    v2026_point_ledger c ON sb.source_id = c.id
+WHERE
+    c.expire_at IS NOT NULL
+    AND c.expire_at < NOW();
+            </code></pre>
         </div>
     </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-
     let state = {
-        userWallet: { trusted_points: 0, bonus_points: 0 },
-        pointPurchases: [],
-        pointLedger: [],
-        spendHistory: [],
+        ledger: [], batchIdCounter: 0, v2025OrderCounter: 0,
+        points_orders: [], pointsOrderIdCounter: 100,
+        v2025_orders: [], v2025_payments: [], paymentIdCounter: 0,
+        points_programs: [
+            { id: 1, price: 1500, points: 500, description: '儲值 A', enabled: 1 },
+            { id: 2, price: 500, points: 100, description: '儲值 B', enabled: 1 },
+            { id: 3, price: 3000, points: 1200, description: '儲值 C', enabled: 1 },
+        ]
     };
-    const purchasePlans = {
-        'A': { id: 'A', price: 1500, trusted: 1500, bonus: 500 },
-        'B': { id: 'B', price: 500, trusted: 500, bonus: 100 },
+    const MAPPINGS = {
+        point_type: { 1: 'TRUSTED', 2: 'BONUS' },
+        source_kind: { 1: 'PURCHASE', 2: 'MARKETING', 3: 'ADMIN', 4: 'REFUND' },
+        event_type: { 1: 'GAIN', 2: 'CONSUME', 3: 'EXPIRE' },
+        points_order_status: { 1: '未付', 2: '付款完成', 3: '付款失敗', 4: '退款' }
     };
-    let nextPurchaseId = 1, nextLedgerId = 1, nextSpendId = 1;
-
-    function purchasePoints(planKey) {
-        const plan = purchasePlans[planKey];
+    
+    function createLedgerEntry(data, currentBatchSize = 0) {
         const now = new Date();
-        const purchase = { id: `P-${nextPurchaseId++}`, price: plan.price, trusted_received: plan.trusted, bonus_received: plan.bonus, status: 'COMPLETED', timestamp: now, newlyAdded: true };
-        state.pointPurchases.push(purchase);
-        state.userWallet.trusted_points += plan.trusted;
-        state.userWallet.bonus_points += plan.bonus;
-        state.pointLedger.push({ id: `L-${nextLedgerId++}`, purchase_id: purchase.id, source_id: purchase.id, point_type: 'TRUSTED', transaction_type: 'PURCHASE_CREDIT', amount: plan.trusted, balance_after: state.userWallet.trusted_points, timestamp: now, newlyAdded: true, transaction_group_id: null });
-        state.pointLedger.push({ id: `L-${nextLedgerId++}`, purchase_id: purchase.id, source_id: purchase.id, point_type: 'BONUS', transaction_type: 'PURCHASE_CREDIT', amount: plan.bonus, balance_after: state.userWallet.bonus_points, timestamp: now, newlyAdded: true, transaction_group_id: null });
+        return {
+            id: state.ledger.length + currentBatchSize + 1,
+            point_order_id: null, v2025_order_id: null,
+            point_type: 0, source_kind: 0, event_type: 0, amount: 0,
+            batch_id: null, source_id: null, expire_at: null,
+            created_at: now, newlyAdded: true, ...data,
+        };
+    }
+
+    function purchasePoints(program) {
+        if (!program) return;
+        const now = new Date();
+        const batch_id = ++state.batchIdCounter;
+        const newPointsOrder = {
+            id: ++state.pointsOrderIdCounter, user_id: 1, points_programs_id: program.id,
+            no: `PO-${Date.now()}`, amount: program.price, status: 2, created_at: now, newlyAdded: true
+        };
+        state.points_orders.push(newPointsOrder);
+        let entries = [];
+        const trusted_amount = program.price;
+        const bonus_amount = program.points;
+        entries.push(createLedgerEntry({ point_order_id: newPointsOrder.id, point_type: 1, source_kind: 1, event_type: 1, amount: trusted_amount, batch_id }, entries.length));
+        if (bonus_amount > 0) {
+            entries.push(createLedgerEntry({ point_order_id: newPointsOrder.id, point_type: 2, source_kind: 1, event_type: 1, amount: bonus_amount, batch_id, expire_at: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000) }, entries.length));
+        }
+        state.ledger.push(...entries);
+        render();
+    }
+
+    function grantMarketingPoints(amount) {
+        const batch_id = ++state.batchIdCounter;
+        state.ledger.push(createLedgerEntry({ point_type: 2, source_kind: 2, event_type: 1, amount, batch_id, expire_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) }));
         render();
     }
     
-    function grantMarketingBonus(amount, reason) {
-        const now = new Date();
-        const ledgerId = `L-${nextLedgerId++}`;
-        state.userWallet.bonus_points += amount;
-        state.pointLedger.push({
-            id: ledgerId, purchase_id: null, source_id: ledgerId,
-            point_type: 'BONUS', transaction_type: 'ADMIN_GRANT_CREDIT',
-            amount: amount, balance_after: state.userWallet.bonus_points,
-            timestamp: now, newlyAdded: true, transaction_group_id: null, notes: reason
+    function calculateBatchBalances() {
+        const balances = new Map();
+        state.ledger.filter(l => l.event_type === 1).forEach(gain => {
+            balances.set(gain.id, {
+                source_id: gain.id, balance: gain.amount, batch_id: gain.batch_id,
+                point_type: gain.point_type, source_kind: gain.source_kind,
+            });
         });
-        render();
-    }
-
-    // *** REFACTORED AND BUGFIXED spendPoints function ***
-    function spendPoints(amountToSpend) {
-        if (amountToSpend <= 0) { alert("消費金額需大於 0"); return; }
-        const totalPoints = state.userWallet.trusted_points + state.userWallet.bonus_points;
-        if (amountToSpend > totalPoints) { alert(`點數不足！目前總點數: ${totalPoints}, 試圖消費: ${amountToSpend}`); return; }
-
-        const spendId = `S-${nextSpendId++}`;
-        let remainingToSpend = amountToSpend;
-        const now = new Date();
-        state.spendHistory.push({ id: spendId, amount: amountToSpend, timestamp: now, status: 'COMPLETED', newlyAdded: true });
-
-        // Step 1: Accurately calculate the current balance of each individual point source.
-        const sourceBalances = new Map();
-        state.pointLedger.forEach(l => {
-            const sourceOriginId = l.purchase_id || l.source_id; 
-            if (!sourceOriginId) return;
-            
-            // The unique identifier for a source is its origin AND its type.
-            const sourceKey = `${sourceOriginId}-${l.point_type}`;
-
-            if (!sourceBalances.has(sourceKey)) {
-                sourceBalances.set(sourceKey, {
-                    balance: 0,
-                    point_type: l.point_type,
-                    purchase_id: l.purchase_id,
-                    source_id: sourceOriginId,
-                    timestamp: l.timestamp 
-                });
+        state.ledger.filter(l => l.event_type === 2 || l.event_type === 3).forEach(consume => {
+            if (balances.has(consume.source_id)) {
+                balances.get(consume.source_id).balance += consume.amount;
             }
-            const source = sourceBalances.get(sourceKey);
-            source.balance += l.amount;
         });
-
-        // Step 2: Create a sorted list of sources to consume from.
-        const sourcesToConsume = Array.from(sourceBalances.values())
-            .filter(s => s.balance > 0)
-            .sort((a, b) => {
-                if (a.point_type === 'BONUS' && b.point_type === 'TRUSTED') return -1;
-                if (a.point_type === 'TRUSTED' && b.point_type === 'BONUS') return 1;
-                return a.timestamp - b.timestamp;
-            });
-        
-        // Step 3: Consume points from the sorted list.
-        for (const source of sourcesToConsume) {
-            if (remainingToSpend === 0) break;
-            
-            const amountConsumed = Math.min(remainingToSpend, source.balance);
-            const walletKey = `${source.point_type.toLowerCase()}_points`;
-            
-            state.userWallet[walletKey] -= amountConsumed;
-            
-            state.pointLedger.push({
-                id: `L-${nextLedgerId++}`,
-                purchase_id: source.purchase_id,
-                source_id: source.source_id,
-                point_type: source.point_type,
-                transaction_type: 'BOOKING_DEBIT',
-                amount: -amountConsumed,
-                balance_after: state.userWallet[walletKey],
-                timestamp: now,
-                newlyAdded: true,
-                transaction_group_id: spendId
-            });
-            remainingToSpend -= amountConsumed;
-        }
+        return Array.from(balances.values()).filter(b => b.balance > 0);
+    }
+    
+    function createSpaceOrder(orderAmount, pointsToUse) {
+        if (isNaN(orderAmount) || isNaN(pointsToUse) || pointsToUse < 0) { return alert("請輸入有效的訂單金額和點數"); }
+        const totalPoints = calculateBatchBalances().reduce((sum, b) => sum + b.balance, 0);
+        if (pointsToUse > totalPoints) { return alert(`點數不足！欲使用 ${pointsToUse}, 但總餘額僅 ${Math.trunc(totalPoints)}`); }
+        const orderId = ++state.v2025OrderCounter;
+        const cashAmount = orderAmount - pointsToUse;
+        if (cashAmount < 0) { return alert('使用點數不可超過訂單金額'); }
+        state.v2025_orders.push({ id: orderId, total_amount: orderAmount, status: 'PAID', refunded_amount: 0, newlyAdded: true });
+        if (pointsToUse > 0) { state.v2025_payments.push({ id: ++state.paymentIdCounter, order_id: orderId, payment_method: 'POINTS', amount: pointsToUse, newlyAdded: true }); }
+        if (cashAmount > 0) { state.v2025_payments.push({ id: ++state.paymentIdCounter, order_id: orderId, payment_method: 'CASH', amount: cashAmount, newlyAdded: true }); }
+        consumePoints(pointsToUse, orderId);
         render();
     }
     
-    function cancelSpend(spendId) {
-        const spendToCancel = state.spendHistory.find(s => s.id === spendId);
-        if (spendToCancel.status === 'CANCELED') { alert("此筆消費已取消，無法重複操作。"); return; }
-        const now = new Date();
-        const debitEntriesToReverse = state.pointLedger.filter(l => l.transaction_group_id === spendId && l.transaction_type === 'BOOKING_DEBIT');
-        debitEntriesToReverse.forEach(debit => {
-            const walletKey = `${debit.point_type.toLowerCase()}_points`;
-            const creditAmount = Math.abs(debit.amount);
-            state.userWallet[walletKey] += creditAmount;
-            state.pointLedger.push({
-                id: `L-${nextLedgerId++}`, purchase_id: debit.purchase_id, source_id: debit.source_id,
-                point_type: debit.point_type, transaction_type: 'CANCELLATION_CREDIT',
-                amount: creditAmount, balance_after: state.userWallet[walletKey],
-                timestamp: now, newlyAdded: true, transaction_group_id: spendId
-            });
-        });
-        spendToCancel.status = 'CANCELED';
-        alert(`消費 ${spendId} 已成功取消！`);
+    function consumePoints(amount, orderId) {
+        let remainingToSpend = amount;
+        if (remainingToSpend <= 0) return;
+        const availableBatches = calculateBatchBalances();
+        const batchesBySeq = availableBatches.reduce((acc, batch) => {
+            if (!acc[batch.batch_id]) acc[batch.batch_id] = []; acc[batch.batch_id].push(batch); return acc;
+        }, {});
+        const sortedSeqKeys = Object.keys(batchesBySeq).sort((a, b) => a - b);
+        for (const seq of sortedSeqKeys) {
+            if (remainingToSpend <= 0) break;
+            const batchGroup = batchesBySeq[seq];
+            batchGroup.sort((a, b) => a.point_type - b.point_type);
+            for (const batch of batchGroup) {
+                if (remainingToSpend <= 0) break;
+                const amountToConsume = Math.min(remainingToSpend, batch.balance);
+                state.ledger.push(createLedgerEntry({
+                    v2025_order_id: orderId, point_type: batch.point_type, source_kind: batch.source_kind,
+                    event_type: 2, amount: -amountToConsume, source_id: batch.source_id
+                }));
+                remainingToSpend -= amountToConsume;
+            }
+        }
+    }
+
+    function handleOrderRefund(orderIdStr, partialAmountStr) {
+        const orderId = parseInt(orderIdStr, 10);
+        if (isNaN(orderId)) return alert('請輸入有效的訂單 ID');
+        const order = state.v2025_orders.find(o => o.id === orderId);
+        if (!order) return alert('找不到訂單');
+        if (order.status === 'REFUNDED') return alert('訂單已全額退款，無法重複操作');
+        const partialAmount = parseInt(partialAmountStr, 10);
+        const isPartial = !isNaN(partialAmount) && partialAmount > 0;
+        let refundAmount = isPartial ? partialAmount : (order.total_amount - order.refunded_amount);
+        if (refundAmount > order.total_amount - order.refunded_amount) { return alert('退款金額超過訂單剩餘可退金額'); }
+        const debitEntries = state.ledger.filter(l => l.v2025_order_id === orderId && l.event_type === 2);
+        const originalTrustedConsumed = debitEntries.filter(l => l.point_type === 1).reduce((sum, l) => sum + Math.abs(l.amount), 0);
+        const originalBonusConsumed = debitEntries.filter(l => l.point_type === 2).reduce((sum, l) => sum + Math.abs(l.amount), 0);
+        const originalTotalPointsConsumed = originalTrustedConsumed + originalBonusConsumed;
+        const payments = state.v2025_payments.filter(p => p.order_id === orderId);
+        const originalCashPayment = payments.find(p => p.payment_method === 'CASH')?.amount || 0;
+        if (order.total_amount === 0) return;
+        const refundRatio = refundAmount / order.total_amount;
+        const cashToRefund = Math.round(originalCashPayment * refundRatio);
+        let trustedToRefund = 0;
+        let bonusToRefund = 0;
+        if (originalTotalPointsConsumed > 0) {
+            const pointsToRefundTotal = Math.round(originalTotalPointsConsumed * refundRatio);
+            const trustedPortion = originalTrustedConsumed / originalTotalPointsConsumed;
+            trustedToRefund = Math.round(pointsToRefundTotal * trustedPortion);
+            bonusToRefund = pointsToRefundTotal - trustedToRefund;
+        }
+        const batch_id = ++state.batchIdCounter;
+        let refundEntries = [];
+        if (trustedToRefund > 0) {
+            refundEntries.push(createLedgerEntry({ v2025_order_id: orderId, point_type: 1, source_kind: 4, event_type: 1, amount: trustedToRefund, batch_id }, refundEntries.length));
+        }
+        if (bonusToRefund > 0) {
+             refundEntries.push(createLedgerEntry({ v2025_order_id: orderId, point_type: 2, source_kind: 4, event_type: 1, amount: bonusToRefund, batch_id }, refundEntries.length));
+        }
+        if (refundEntries.length > 0) { state.ledger.push(...refundEntries); }
+        order.refunded_amount += refundAmount;
+        if (Math.abs(order.refunded_amount - order.total_amount) < 1) {
+            order.status = 'REFUNDED';
+        } else {
+            order.status = 'PARTIALLY_REFUNDED';
+        }
+        order.newlyAdded = true;
+        alert(`訂單 ${order.id} 已成功退款！\n- 退還 TRUSTED 點數: ${trustedToRefund}\n- 退還 BONUS 點數: ${bonusToRefund}\n- 退還現金: $${cashToRefund}`);
         render();
-    }
-
-    function calculateRefund(purchaseId) {
-        const purchase = state.pointPurchases.find(p => p.id === purchaseId);
-        if (!purchase) return { refundAmount: 0 };
-        const transactions = state.pointLedger.filter(l => l.purchase_id === purchase.id && l.transaction_type !== 'PURCHASE_CREDIT');
-        const netConsumedBonus = transactions.filter(l => l.point_type === 'BONUS').reduce((sum, l) => sum + l.amount, 0);
-        const netConsumedTrusted = transactions.filter(l => l.point_type === 'TRUSTED').reduce((sum, l) => sum + l.amount, 0);
-        const totalDeduction = Math.abs(netConsumedBonus) + Math.abs(netConsumedTrusted);
-        const refundAmount = Math.max(0, purchase.price - totalDeduction);
-        return { purchase, refundAmount };
-    }
-
-    function executeRefund(purchaseId, refundAmount, isBatch = false) {
-        const purchase = state.pointPurchases.find(p => p.id === purchaseId);
-        const now = new Date();
-        const remainingTrusted = purchase.trusted_received + state.pointLedger.filter(l => l.purchase_id === purchase.id && l.point_type === 'TRUSTED' && l.transaction_type !== 'PURCHASE_CREDIT').reduce((sum, l) => sum + l.amount, 0);
-        const remainingBonus = purchase.bonus_received + state.pointLedger.filter(l => l.purchase_id === purchase.id && l.point_type === 'BONUS' && l.transaction_type !== 'PURCHASE_CREDIT').reduce((sum, l) => sum + l.amount, 0);
-        if (remainingTrusted > 0) {
-             state.userWallet.trusted_points -= remainingTrusted;
-             state.pointLedger.push({ id: `L-${nextLedgerId++}`, purchase_id: purchase.id, source_id: purchase.id, point_type: 'TRUSTED', transaction_type: 'REFUND_DEBIT', amount: -remainingTrusted, balance_after: state.userWallet.trusted_points, timestamp: now, newlyAdded: true, transaction_group_id: null });
-        }
-        if (remainingBonus > 0) {
-             state.userWallet.bonus_points -= remainingBonus;
-             state.pointLedger.push({ id: `L-${nextLedgerId++}`, purchase_id: purchase.id, source_id: purchase.id, point_type: 'BONUS', transaction_type: 'CLAWBACK_DEBIT', amount: -remainingBonus, balance_after: state.userWallet.bonus_points, timestamp: now, newlyAdded: true, transaction_group_id: null });
-        }
-        purchase.status = 'REFUNDED';
-        if (!isBatch) { alert(`退款 $${refundAmount.toFixed(2)} 已成功處理！`); render(); }
     }
 
     function handleAccountRefund() {
-        const refundablePurchases = state.pointPurchases.filter(p => p.status === 'COMPLETED');
-        if (refundablePurchases.length === 0) { alert("帳戶中沒有可供退款的儲值訂單。"); return; }
-        let totalRefundableAmount = 0;
-        let refundBreakdown = [];
-        refundablePurchases.forEach(purchase => {
-            const { refundAmount } = calculateRefund(purchase.id);
-            if (refundAmount > 0) {
-                totalRefundableAmount += refundAmount;
-                refundBreakdown.push({ purchaseId: purchase.id, amount: refundAmount });
-            }
-        });
-        if (totalRefundableAmount === 0) { alert("經計算，您的帳戶目前沒有可退款的餘額。"); return; }
-        let confirmationMessage = `系統已掃描您的所有儲值歷史。\n\n` + `總可退款金額為: $${totalRefundableAmount.toFixed(2)}\n\n` + `--- 退款明細 ---\n`;
-        refundBreakdown.forEach(item => { confirmationMessage += `  - 訂單 ${item.purchaseId}: 可退 $${item.amount.toFixed(2)}\n`; });
-        confirmationMessage += `\n確定要執行以上所有退款嗎？`;
-        if (window.confirm(confirmationMessage)) {
-            refundBreakdown.forEach(item => { executeRefund(item.purchaseId, item.amount, true); });
-            alert(`帳戶退款總計 $${totalRefundableAmount.toFixed(2)} 已全部處理完畢！`);
+        const availableBatches = calculateBatchBalances();
+        const trustedToRefund = availableBatches.filter(b => b.point_type === 1);
+        const bonusToWriteOff = availableBatches.filter(b => b.point_type === 2 && b.source_kind !== 2);
+        const bonusToKeep = availableBatches.filter(b => b.point_type === 2 && b.source_kind === 2);
+        const totalCashRefund = trustedToRefund.reduce((sum, b) => sum + b.balance, 0);
+        const totalBonusWriteOff = bonusToWriteOff.reduce((sum, b) => sum + b.balance, 0);
+        const totalBonusToKeep = bonusToKeep.reduce((sum, b) => sum + b.balance, 0);
+        if (totalCashRefund < 1 && totalBonusWriteOff < 1) { return alert('帳戶中沒有可結清的儲值點數。'); }
+        let msg = `系統將結清您的帳戶：\n\n1. 信託點數退款：將退還現金 $${Math.trunc(totalCashRefund)}\n2. 儲值/退款贈點作廢：將清空 ${Math.trunc(totalBonusWriteOff)} 點\n3. 行銷贈點保留：${Math.trunc(totalBonusToKeep)} 點將被保留。\n\n確定要繼續嗎？`;
+        if (window.confirm(msg)) {
+            let entries = [];
+            [...trustedToRefund, ...bonusToWriteOff].forEach(batch => {
+                 entries.push(createLedgerEntry({ point_type: batch.point_type, source_kind: 3, event_type: 2, amount: -batch.balance, source_id: batch.source_id }, entries.length));
+            });
+            state.ledger.push(...entries);
+            alert('帳戶已結清！');
             render();
         }
     }
 
     function render() {
-        document.getElementById('wallet-trusted').textContent = state.userWallet.trusted_points.toFixed(2);
-        document.getElementById('wallet-bonus').textContent = state.userWallet.bonus_points.toFixed(2);
-        const purchasesBody = document.getElementById('table-purchases').getElementsByTagName('tbody')[0];
-        purchasesBody.innerHTML = '';
-        [...state.pointPurchases].reverse().forEach(p => {
-            const row = purchasesBody.insertRow();
+        const balances = calculateBatchBalances();
+        const totalTrusted = Math.trunc(balances.filter(b => b.point_type === 1).reduce((sum, b) => sum + b.balance, 0));
+        const totalBonus = Math.trunc(balances.filter(b => b.point_type === 2).reduce((sum, b) => sum + b.balance, 0));
+        document.getElementById('wallet-trusted').textContent = totalTrusted;
+        document.getElementById('wallet-bonus').textContent = totalBonus;
+        const batchesBody = document.getElementById('table-batches').querySelector('tbody');
+        batchesBody.innerHTML = '';
+        balances.sort((a,b) => a.batch_id - b.batch_id || a.point_type - b.point_type).forEach(b => {
+            const row = batchesBody.insertRow();
+            row.innerHTML = `<td>${b.source_id}</td><td>${b.batch_id}</td><td>${MAPPINGS.point_type[b.point_type]}</td><td>${Math.trunc(b.balance)}</td>`;
+        });
+        const pointsOrdersBody = document.getElementById('table-points-orders').querySelector('tbody');
+        pointsOrdersBody.innerHTML = '';
+        [...state.points_orders].reverse().forEach(o => {
+            const row = pointsOrdersBody.insertRow();
+            if (o.newlyAdded) row.classList.add('new-row');
+            row.innerHTML = `<td>${o.id}</td><td>${o.user_id}</td><td>${o.points_programs_id}</td><td>${o.no}</td><td>${o.amount}</td><td>${MAPPINGS.points_order_status[o.status]}</td>`;
+            o.newlyAdded = false;
+        });
+        const ordersBody = document.getElementById('table-v2025-orders').querySelector('tbody');
+        ordersBody.innerHTML = '';
+        [...state.v2025_orders].reverse().forEach(o => {
+            const row = ordersBody.insertRow();
+            if (o.newlyAdded) row.classList.add('new-row');
+            row.innerHTML = `<td>${o.id}</td><td>${o.total_amount}</td><td>${o.status}</td><td>${Math.round(o.refunded_amount)}</td>`;
+            o.newlyAdded = false;
+        });
+        const paymentsBody = document.getElementById('table-v2025-payments').querySelector('tbody');
+        paymentsBody.innerHTML = '';
+        [...state.v2025_payments].reverse().forEach(p => {
+            const row = paymentsBody.insertRow();
             if (p.newlyAdded) row.classList.add('new-row');
-            row.innerHTML = `<td>${p.id}</td><td>$${p.price.toFixed(2)}</td><td>${p.trusted_received.toFixed(2)}</td><td>${p.bonus_received.toFixed(2)}</td><td>${p.status}</td>`;
+            row.innerHTML = `<td>${p.id}</td><td>${p.order_id}</td><td>${p.payment_method}</td><td>${p.amount}</td>`;
+            p.newlyAdded = false;
         });
-        const spendsBody = document.getElementById('table-spends').getElementsByTagName('tbody')[0];
-        spendsBody.innerHTML = '';
-        [...state.spendHistory].reverse().forEach(s => {
-            const row = spendsBody.insertRow();
-            if (s.newlyAdded) row.classList.add('new-row');
-            const isCanceled = s.status === 'CANCELED';
-            row.innerHTML = `<td>${s.id}</td><td>${s.amount.toFixed(2)}</td><td>${isCanceled ? '已取消' : '已完成'}</td><td><button class="secondary cancel-btn" data-spend-id="${s.id}" ${isCanceled ? 'disabled' : ''}>${isCanceled ? '已取消' : '取消'}</button></td>`;
-        });
-        document.querySelectorAll('.cancel-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => { cancelSpend(e.target.dataset.spendId); });
-        });
-        const ledgerBody = document.getElementById('table-ledger').getElementsByTagName('tbody')[0];
+        const ledgerBody = document.getElementById('table-ledger').querySelector('tbody');
         ledgerBody.innerHTML = '';
-        [...state.pointLedger].reverse().forEach(l => {
+        [...state.ledger].reverse().forEach(l => {
             const row = ledgerBody.insertRow();
             if (l.newlyAdded) row.classList.add('new-row');
-            let amountHtml;
-            if (l.transaction_type === 'CANCELLATION_CREDIT') {
-                amountHtml = `<td class="credit-cancel">+${l.amount.toFixed(2)}</td>`;
-            } else if (l.transaction_type === 'ADMIN_GRANT_CREDIT') {
-                 amountHtml = `<td class="marketing-grant">+${l.amount.toFixed(2)}</td>`;
-            } else {
-                const style = l.amount > 0 ? 'color:green; font-weight:bold;' : 'color:red;';
-                amountHtml = `<td style="${style}">${l.amount > 0 ? '+' : ''}${l.amount.toFixed(2)}</td>`;
-            }
-            const sourceDisplay = l.purchase_id || `${l.source_id} (行銷)`;
-            row.innerHTML = `<td>${l.id}</td><td>${sourceDisplay}</td><td>${l.transaction_group_id || 'N/A'}</td><td>${l.point_type}</td><td>${l.transaction_type}</td>${amountHtml}<td>${l.balance_after.toFixed(2)}</td>`;
+            const amountClass = l.amount > 0 ? 'credit' : 'debit';
+            row.innerHTML = `<td>${l.id}</td><td>${l.point_order_id || 'N/A'}</td><td>${l.v2025_order_id || 'N/A'}</td><td>${MAPPINGS.point_type[l.point_type]}</td><td>${MAPPINGS.source_kind[l.source_kind]}</td><td>${MAPPINGS.event_type[l.event_type]}</td><td class="${amountClass}">${l.amount}</td><td>${l.batch_id || 'N/A'}</td><td>${l.source_id || 'N/A'}</td><td>${l.expire_at ? l.expire_at.toLocaleDateString() : 'N/A'}</td>`;
+            l.newlyAdded = false;
         });
-        state.pointPurchases.forEach(p => p.newlyAdded = false);
-        state.pointLedger.forEach(l => l.newlyAdded = false);
-        state.spendHistory.forEach(s => s.newlyAdded = false);
     }
+    
+    const purchaseButtonsContainer = document.getElementById('purchase-buttons-container');
+    state.points_programs.forEach(program => {
+        if(program.enabled){
+            const btn = document.createElement('button');
+            btn.textContent = `${program.description} ($${program.price} 送 ${program.points}點)`;
+            btn.style.marginBottom = '5px';
+            btn.addEventListener('click', () => purchasePoints(program));
+            purchaseButtonsContainer.appendChild(btn);
+        }
+    });
 
-    document.getElementById('btn-purchase-a').addEventListener('click', () => purchasePoints('A'));
-    document.getElementById('btn-purchase-b').addEventListener('click', () => purchasePoints('B'));
-    document.getElementById('btn-spend').addEventListener('click', () => {
-        const amount = parseFloat(document.getElementById('spend-amount').value);
-        spendPoints(amount);
+    document.getElementById('btn-grant-referral').addEventListener('click', () => grantMarketingPoints(100));
+    document.getElementById('btn-create-order').addEventListener('click', () => {
+        const orderAmount = parseInt(document.getElementById('order-amount').value, 10);
+        const pointsToUse = parseInt(document.getElementById('points-to-use').value, 10);
+        createSpaceOrder(orderAmount, pointsToUse);
+    });
+    document.getElementById('btn-order-refund').addEventListener('click', () => {
+        const orderId = document.getElementById('refund-order-id').value;
+        const partialAmount = document.getElementById('partial-refund-amount').value;
+        handleOrderRefund(orderId, partialAmount);
     });
     document.getElementById('btn-account-refund').addEventListener('click', handleAccountRefund);
-    document.getElementById('btn-grant-referral').addEventListener('click', () => grantMarketingBonus(100, '好友推薦'));
-    document.getElementById('btn-grant-event').addEventListener('click', () => grantMarketingBonus(88, '節日活動'));
 
     render();
 });
 </script>
-
-<div class="philosophy-section">
-    <div class="data-section">
-        <h2>核心設計哲學：我們的點數與退款邏輯</h2>
-        <div class="philosophy-content">
-            <h3>1. 原則：「儲值贈點」是有條件的饋贈</h3>
-            <p>我們系統的基石是一個簡單而公平的原則：「儲值贈點」是一種「有條件的饋贈」，而非「無條件的禮物」。</p>
-            <p>它的存在，是為了獎勵並留住持續消費的顧客，而不是為了讓顧客在終止交易（退款）時，還能保留因該交易而產生的額外利益。</p>
-            <h3>2. 類比：「滿額贈」的百貨公司邏輯</h3>
-            <p>這個原則最好用一個您我都很熟悉的實體店例子來理解：</p>
-            <div class="analogy-box">
-                <h4>情境：百貨公司週年慶</h4>
-                <ul>
-                    <li>活動是「單筆消費滿 $1500，即贈送價值 $500 的旅行組合」。</li>
-                    <li>您買了一組 $1500 的精華液（相當於 儲值單 A）。</li>
-                    <li>您獲贈了一組價值 $500 的旅行組合（相當於 500 儲值贈點）。</li>
-                    <li>回家後，您把那組 $500 的旅行組合用掉了（相當於 花掉了贈點）。</li>
-                    <li>幾天後，您覺得精華液不適合，回去要求退貨（相當於 申請退款）。</li>
-                </ul>
-                <h4>專櫃的處理方式：</h4>
-                <p>專櫃會告訴您：「精華液 $1500 可以退。但由於您已將價值 $500 的贈品使用完畢，我們需要從您的退款中扣除贈品的費用。」</p>
-                <p><strong>最終您能拿回的現金是：$1500 - $500 = $1000。</strong></p>
-                <p>我們的點數系統，正是基於這個公平且廣為接受的商業邏輯。</p>
-            </div>
-            <h3>3. 實踐：對使用者最有利的「全域點數池 FIFO」消耗原則</h3>
-            <p>為了給予使用者最佳的體驗，我們在「消費」時採用了最大方的規則：</p>
-            <div class="practice-box">
-                <h4>核心邏輯：</h4>
-                <p>「贈點」和「信託點數」分別被視為兩個獨立的全域大池子。</p>
-                <h4>消耗順序：</h4>
-                <ol>
-                    <li>永遠優先消耗所有贈點 (按儲值順序 A→B，**行銷贈點**比儲值贈點更優先)。</li>
-                    <li>所有贈點用完後，才開始消耗所有信託點數 (按儲值順序 A→B)。</li>
-                </ol>
-                <p>這能確保使用者永遠先花掉公司送的點數，最後才動到自己付費購買的點數，讓每一次消費都感受到最大的價值。</p>
-            </div>
-            <h3>4. 閉環：公平的商業模式</h3>
-            <p>使用者友善的消耗規則，對應了一個嚴謹的退款審計機制。當使用者申請退款時，系統就像那位專櫃人員，會精確地回溯：</p>
-            <div class="closing-box">
-                <p>任何一筆退款，都會優先將使用者「已享受的**儲值贈點**價值」進行追討。而獨立的**行銷贈點**因為與儲值無關，其消耗**不會**影響退款。</p>
-                <p>這並不是漏洞，而是一個刻意設計的、公平的商業閉環。它確保了贈點「鼓勵消費、提高忠誠度」的初衷得以實現，同時也保護了公司不會在使用者終止交易時，還產生額外的虧損，從而讓整個商業模式得以永續經營。</p>
-            </div>
-        </div>
-    </div>
-</div>
-
 </body>
 </html>
